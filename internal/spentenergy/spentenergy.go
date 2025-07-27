@@ -2,6 +2,7 @@ package spentenergy
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -22,8 +23,23 @@ func WalkingSpentCalories(steps int, weight, height float64, duration time.Durat
 }
 
 func RunningSpentCalories(steps int, weight, height float64, duration time.Duration) (float64, error) {
-	if steps <= 0 || weight <= 0 || height <= 0 || duration <= 0 {
-		return 0, fmt.Errorf("ошибка: steps, weight, height и duration не могут быть меньше или равны 0")
+	var errs []string
+
+	if steps <= 0 {
+		errs = append(errs, "steps")
+	}
+	if weight <= 0 {
+		errs = append(errs, "weight")
+	}
+	if height <= 0 {
+		errs = append(errs, "height")
+	}
+	if duration <= 0 {
+		errs = append(errs, "duration")
+	}
+
+	if len(errs) > 0 {
+		return 0, fmt.Errorf("error: the following parameters must be greater than 0: %s", strings.Join(errs, ", "))
 	}
 
 	return (weight * MeanSpeed(steps, height, duration) * duration.Minutes()) / minInH, nil

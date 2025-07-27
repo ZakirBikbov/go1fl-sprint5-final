@@ -1,6 +1,7 @@
 package daysteps
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -19,35 +20,39 @@ type DaySteps struct {
 func (ds *DaySteps) Parse(datastring string) (err error) {
 	parts := strings.Split(datastring, ",")
 	if len(parts) != 2 {
-		return fmt.Errorf("ошибка: строка должна содержать ровно одну запятую и делиться на две части")
+		return fmt.Errorf("the string must contain exactly one comma and be split into two parts")
 	}
 
 	rawSteps := parts[0]
-	rawDuration := parts[1]
-
-	if strings.TrimSpace(rawSteps) != rawSteps {
-		return fmt.Errorf("ошибка: значение steps содержит недопустимые пробелы")
-	}
-	if strings.TrimSpace(rawDuration) != rawDuration {
-		return fmt.Errorf("ошибка: значение duration содержит недопустимые пробелы")
+	if strings.HasPrefix(rawSteps, " ") || strings.HasSuffix(rawSteps, " ") {
+		return errors.New("steps value contains leading or trailing whitespace")
 	}
 
-	steps, err := strconv.Atoi(rawSteps)
+	stepsStr := strings.TrimSpace(rawSteps)
+
+	steps, err := strconv.Atoi(stepsStr)
 	if err != nil {
-		return fmt.Errorf("ошибка преобразования steps: %w", err)
+		return fmt.Errorf("invalid steps: failed to parse as integer: %w", err)
 	}
 
 	if steps <= 0 {
-		return fmt.Errorf("steps должен быть положительным числом, но получено: %d", steps)
+		return fmt.Errorf("steps must be a positive number, but received: %d", steps)
 	}
 
-	duration, err := time.ParseDuration(rawDuration)
+	rawDuration := parts[1]
+	if strings.HasPrefix(rawDuration, " ") || strings.HasSuffix(rawDuration, " ") {
+		return errors.New("duration value contains leading or trailing whitespace")
+	}
+
+	durationStr := strings.TrimSpace(rawDuration)
+
+	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
-		return fmt.Errorf("ошибка преобразования duration: %w", err)
+		return fmt.Errorf("invalid duration: failed to parse: %w", err)
 	}
 
 	if duration <= 0 {
-		return fmt.Errorf("duration должен быть положительным числом, но получено: %d", steps)
+		return fmt.Errorf("duration must be a positive number, but received: %s", duration)
 	}
 
 	ds.Steps = steps
@@ -62,10 +67,10 @@ func (ds DaySteps) ActionInfo() (string, error) {
 		return "", err
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, "Количество шагов: %d.\n", ds.Steps)
-	fmt.Fprintf(&b, "Дистанция составила %.2f км.\n", distance)
-	fmt.Fprintf(&b, "Вы сожгли %.2f ккал.\n", calories)
+	result := fmt.Sprintf(
+		"Количество шагов: %d.\nДистанция составила %.2f км.\nВы сожгли %.2f ккал.\n",
+		ds.Steps, distance, calories,
+	)
 
-	return b.String(), nil
+	return result, nil
 }
